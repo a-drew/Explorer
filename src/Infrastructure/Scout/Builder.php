@@ -33,6 +33,37 @@ class Builder extends \Laravel\Scout\Builder
         }
     }
 
+    public function paginateRaw($perPage = null, $pageName = 'page', $page = null)
+    {
+        $engine = $this->engine();
+
+        if (!$engine instanceof ElasticEngine) {
+            return parent::paginateRaw($perPage, $pageName, $page);
+        }
+
+        $page = $page ?: Paginator::resolveCurrentPage($pageName);
+
+        $perPage = $perPage ?: $this->model->getPerPage();
+
+        $results = $engine->paginate($this, $perPage, $page);
+
+        $paginator = new Paginator($results, $perPage, $page, [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => $pageName,
+        ]);
+
+        return $paginator->appends('query', $this->query);
+    }
+
+    public function paginate($perPage = null, $pageName = 'page', $page = null)
+    {
+        if ($this->engine() instanceof ElasticEngine) {
+            return $this->paginateRaw()->asModels();
+        }
+
+        return parent::paginate($perPage, $pageName, $page);
+    }
+
     public function join($model): self
     {
         if (!$model instanceof Model) {
