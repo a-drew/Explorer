@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace JeroenG\Explorer\Application;
 
 use Countable;
+use Illuminate\Container\Container;
+use Illuminate\Support\Collection;
 
 class Results implements Countable
 {
@@ -15,9 +17,19 @@ class Results implements Countable
         $this->rawResults = $rawResults;
     }
 
-    public function hits(): array
+    /**
+     * @return Collection|Hit[]
+     */
+    public function hits(): Collection|array
     {
-        return $this->rawResults['hits']['hits'];
+        return collect($this->rawResults['hits']['hits'])->map(
+            fn($hit) => Container::getInstance()->makeWith(Hit::class, ['hit' => $hit])
+        );
+    }
+
+    public function documents()
+    {
+        return $this->hits()->map(fn(Hit $hit) => $hit->document());
     }
 
     /** @return AggregationResult[] */

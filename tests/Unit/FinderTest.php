@@ -7,6 +7,7 @@ namespace JeroenG\Explorer\Tests\Unit;
 use Elasticsearch\Client;
 use InvalidArgumentException;
 use JeroenG\Explorer\Application\AggregationResult;
+use JeroenG\Explorer\Application\Hit;
 use JeroenG\Explorer\Application\SearchCommand;
 use JeroenG\Explorer\Domain\Aggregations\TermsAggregation;
 use JeroenG\Explorer\Domain\Query\Query;
@@ -68,7 +69,7 @@ class FinderTest extends MockeryTestCase
         $results = $subject->find();
 
         self::assertCount(1, $results);
-        self::assertSame([$hit], $results->hits());
+        self::assertTrue($results->hits()->contains(new Hit($hit)));
     }
 
     public function test_it_accepts_must_should_filter_and_where_queries(): void
