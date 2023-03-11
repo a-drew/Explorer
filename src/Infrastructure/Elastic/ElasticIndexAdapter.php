@@ -116,6 +116,13 @@ final class ElasticIndexAdapter implements IndexAdapterInterface
         }
     }
 
+    public function getAliases(string $index): array
+    {
+        $response = $this->client->indices()->getAlias(['index' => $index]);
+
+        return array_keys($response[$index]['aliases'] ?? []);
+    }
+
     private function makeAliasActive(IndexAliasConfigurationInterface $aliasConfiguration): void
     {
         $exists = $this->client->indices()->existsAlias(['name' => $aliasConfiguration->getAliasName()]);

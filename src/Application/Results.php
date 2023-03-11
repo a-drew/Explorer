@@ -27,6 +27,11 @@ class Results implements Countable
         );
     }
 
+    public function models()
+    {
+        return $this->hits()->map(fn(Hit $hit) => $hit->model());
+    }
+
     public function documents()
     {
         return $this->hits()->map(fn(Hit $hit) => $hit->document());

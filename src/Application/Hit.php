@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace JeroenG\Explorer\Application;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use JeroenG\Explorer\Domain\IndexManagement\IndexConfigurationRepositoryInterface;
 
 class Hit implements Arrayable
 {
     protected array $hit;
+
+    protected ?string $class = null;
 
     public function __construct(array $hit)
     {
@@ -19,10 +23,12 @@ class Hit implements Arrayable
 
     public function toArray(): array
     {
+        $model = $this->model();
         $document = $this->document();
         $highlight = $this->highlight();
 
         return [
+            'model' => $model?->toArray(),
             'index_name' => $this->indexName(),
             'document' => $document->toArray(),
             'highlight' => $highlight?->raw(),
@@ -38,6 +44,41 @@ class Hit implements Arrayable
     public function indexName(): string
     {
         return $this->hit['_index'];
+    }
+
+    public function getIndexAliases(): array
+    {
+        return resolve(IndexAdapterInterface::class)->getAliases($this->indexName());
+    }
+
+    /**
+     * Identify the result's matching model class using its index
+     */
+    public function modelClass(): ?string
+    {
+        if ($this->class !== null) {
+            return $this->class;
+        }
+
+        $repository = resolve(IndexConfigurationRepositoryInterface::class);
+        $indexes = [$this->indexName(), ...$this->getIndexAliases()];
+
+        foreach ($indexes as $index) {
+            try {
+                $this->class = $repository->findForIndex($index)->getModel();
+                break;
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return $this->class;
+    }
+
+    public function model(): ?Model
+    {
+        $class = $this->modelClass();
+        return $class !== null ? $class::find($this->id()) : null;
     }
 
     public function score(): ?float
