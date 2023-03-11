@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace JeroenG\Explorer;
 
 use Elasticsearch\ClientBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use JeroenG\Explorer\Application\DocumentAdapterInterface;
@@ -86,8 +87,32 @@ class ExplorerServiceProvider extends ServiceProvider
             $this->aggregations[$name] = $aggregation;
             return $this;
         });
+
         Builder::macro('property', function (QueryProperty $queryProperty) {
             $this->queryProperties[] = $queryProperty;
+        });
+
+        Builder::macro('joinMany', function ($models) {
+            foreach ($models as $model) {
+                $this->join($model);
+            }
+            return $this;
+        });
+
+        Builder::macro('join', function ($model) {
+            if (!$model instanceof Model) {
+                $model = new $model;
+            }
+
+            if (empty($this->index) && method_exists($this->model, 'searchableAs')) {
+                $this->index = $this->model->searchableAs();
+            }
+
+            if (method_exists($model, 'searchableAs')) {
+                $index = $model->searchableAs();
+                $this->index .= ',' . $index;
+            }
+            return $this;
         });
     }
 

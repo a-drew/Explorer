@@ -143,6 +143,11 @@ class ElasticEngine extends Engine
             return $model->newCollection();
         }
 
+        // when using multiple indexes, we can't use getScoutModelsByIds
+        if (count(explode(',', $builder->index ?? '')) > 1) {
+            return $results->models();
+        }
+
         $objectIds = $this->mapIds($results)->all();
         $objectIdPositions = array_flip($objectIds);
 
@@ -162,6 +167,11 @@ class ElasticEngine extends Engine
 
         if ($results->count() === 0) {
             return LazyCollection::make($model->newCollection());
+        }
+
+        // when using multiple indexes, we can't use getScoutModelsByIds
+        if (count(explode(',', $builder->index ?? '')) > 1) {
+            return $this->map($builder, $results, $model)->lazy();
         }
 
         $objectIds = $this->mapIds($results)->all();
